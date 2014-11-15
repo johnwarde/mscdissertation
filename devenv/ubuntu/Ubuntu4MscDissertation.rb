@@ -3,6 +3,7 @@
 # As I learn more about chef I should be able to create a cookbook etc.
 
 package 'tree'
+package 'xclip'
 package 'git-all'
 # The following may have only installed the basic version of Eclipse, use apt-cache search <packagename> | grep <packagename>
 package 'eclipse'
