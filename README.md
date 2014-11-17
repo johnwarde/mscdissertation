@@ -1,8 +1,8 @@
 mscdissertation
 ===============
 
-Msc Dissertation for 
+Masters Dissertation for 
 
-MSc in Advanced Software Engineering at 
+M.Sc. in Computing (Advanced Software Development) at 
 
 Dublin Institute of Technology, Ireland.
