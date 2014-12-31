@@ -1,18 +1,20 @@
 # To run this script type ...
-# chef-apply
+# sudo chef-apply
 # As I learn more about chef I should be able to create a cookbook etc.
 
 package 'tree'
 package 'xclip'
+package 'graphviz'
 package 'git-all'
 # The following may have only installed the basic version of Eclipse, use apt-cache search <packagename> | grep <packagename>
-package 'eclipse'
+#package 'eclipse'
 package 'maven'
 
 
 # For Eclipse, install the following plugins (add sites below to ) ...
-# Maven Integration http://download.eclipse.org/technology/m2e/releases
 # EGit http://download.eclipse.org/egit/updates
+#  http://www.fuin.org/p2-repository/ (Expand "Maven osgi-bundles" and select "slf4j-api" - required for Maven integration)
+# Maven Integration http://download.eclipse.org/technology/m2e/releases
 
 # To uninstall a package, use the following ... (haven't had to try yet)
 # sudo apt-get remove <packagename>
