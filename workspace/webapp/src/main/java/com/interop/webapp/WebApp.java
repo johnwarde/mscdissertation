@@ -55,7 +55,7 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	}
 
 	public static void main(String[] args) throws Exception {
-		new SpringApplicationBuilder(SampleWebSecureCustomApplication.class).run(args);
+		new SpringApplicationBuilder(WebApp.class).run(args);
 	}
 
 	@Override
