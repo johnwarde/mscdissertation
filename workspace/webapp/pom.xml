@@ -12,12 +12,14 @@
 	<!-- PROJECT INFO -->
 	<groupId>com.interop.webapp</groupId>
 	<artifactId>webapp</artifactId>
-	<name>Spring Boot Web Secure JDBC Sample</name>
-	<description>Spring Boot Web Secure JDBC Sample</description>
-	<url>http://projects.spring.io/spring-boot/</url>
+	<name>Interop Web App</name>
+	<description>Interop Web Application based from 
+Spring Boot Web Secure JDBC Sample
+</description>
+	<url>https://github.com/johnwarde/mscdissertation</url>
 	<organization>
-		<name>Pivotal Software, Inc.</name>
-		<url>http://www.spring.io</url>
+		<name>John Warde</name>
+		<url>https://www.linkedin.com/in/johnwarde</url>
 	</organization>
 
 <!--	
@@ -96,4 +98,8 @@
 		</plugins>
 	</build>
 
+	<issueManagement>
+		<system>GitHub Issues</system>
+		<url>https://github.com/johnwarde/mscdissertation/issues</url>
+	</issueManagement>
 </project>
