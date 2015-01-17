@@ -33,6 +33,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
@@ -49,11 +52,27 @@ public class WebApp extends WebMvcConfigurerAdapter {
 		return "home";
 	}
 
-	@RequestMapping("/foo")
-	public String foo() {
-		throw new RuntimeException("Expected exception in controller");
+	@RequestMapping(value = "/upload", method = RequestMethod.GET)
+	public String upload(Map<String, Object> model) {
+		return "upload";
 	}
 
+	@RequestMapping(value = "/upload", method = RequestMethod.POST)
+	public String upload(Map<String, Object> model, 
+			@RequestParam(value="imagename", defaultValue="") String imagename, 
+			@RequestParam("file") MultipartFile uploadedfile) {
+		model.put("imagename", imagename);
+		//uploadedfile.transferTo(arg0);
+		return "upload";
+	}	
+
+/*  // TODO: Doesn't work
+	@RequestMapping("/logout")
+	public String logout(Map<String, Object> model) {
+		return "redirect:/";
+	}
+*/
+	
 	public static void main(String[] args) throws Exception {
 		new SpringApplicationBuilder(WebApp.class).run(args);
 	}

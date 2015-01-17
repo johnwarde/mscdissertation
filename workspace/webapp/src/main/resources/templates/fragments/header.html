@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	  xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
+<head>
+<title th:text="${title}">Title</title>
+<link rel="stylesheet" th:href="@{/css/bootstrap.min.css}"
+	href="../../css/bootstrap.min.css" />
+</head>
+<body>
+	<div class="navbar" th:fragment="header">
+		<div class="navbar-inner">
+			<a class="brand" href="https://github.com/johnwarde/mscdissertation"> Interop </a>
+			<ul class="nav">
+				<li><a th:href="@{/}" href="home.html"> Home </a></li>
+				<li th:if="${#authentication}? ${#authorization.expression('isAuthenticated()')}">
+					<a th:href="@{/upload}" href="upload"> Upload </a>
+				</li>
+				<li th:if="${#authentication}? ${#authorization.expression('isAuthenticated()')}">
+					<a th:href="@{/logout}" href="logout"> Logout </a>
+				</li>
+			</ul>
+		</div>
+	</div>
+</body>
+</html>
