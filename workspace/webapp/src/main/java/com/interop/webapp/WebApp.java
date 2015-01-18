@@ -18,9 +18,8 @@ package com.interop.webapp;
 
 import java.util.Date;
 import java.util.Map;
-
 import javax.sql.DataSource;
-
+import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
@@ -31,11 +30,14 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
@@ -43,12 +45,18 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 @ComponentScan
 @Controller
 public class WebApp extends WebMvcConfigurerAdapter {
+	static Logger log = Logger.getLogger(WebApp.class.getName());
 
 	@RequestMapping("/")
 	public String home(Map<String, Object> model) {
-		model.put("message", "Hello World");
+		log.info("HERE!!");
+	    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+	    String name = auth.getName(); //get logged in username
+		
+		model.put("message", String.format("Hello %s!", name));
 		model.put("title", "Hello Home");
 		model.put("date", new Date());
+
 		return "home";
 	}
 
@@ -81,7 +89,13 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	public void addViewControllers(ViewControllerRegistry registry) {
 		registry.addViewController("/login").setViewName("login");
 	}
-
+	
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+    	// TODO: Need to have the following file location in a configuration file somewhere
+        registry.addResourceHandler("/resources/**").addResourceLocations("file:/Users/johnwarde/Downloads/webappresources/");
+    }
+    
 	@Bean
 	public ApplicationSecurity applicationSecurity() {
 		return new ApplicationSecurity();
@@ -98,7 +112,9 @@ public class WebApp extends WebMvcConfigurerAdapter {
 
 		@Override
 		protected void configure(HttpSecurity http) throws Exception {
-			http.authorizeRequests().antMatchers("/css/**").permitAll().anyRequest()
+			http
+				.authorizeRequests()
+				.antMatchers("/css/**","/resources/**").permitAll().anyRequest()
 					.fullyAuthenticated().and().formLogin().loginPage("/login")
 					.failureUrl("/login?error").permitAll();
 		}
@@ -109,5 +125,27 @@ public class WebApp extends WebMvcConfigurerAdapter {
 		}
 
 	}
+	
+	/*  May not need this
+	// ENVIRONMENT VARIABLES
+	// class member
+	private AnnotationConfigWebApplicationContext serverContext = new AnnotationConfigWebApplicationContext();
+	// Put this in a method
+	ConfigurableEnvironment ce = this.serverContext.getEnvironment();
+	Map<String, Object> envVars = ce.getSystemEnvironment();
+	String imageStore = (String) envVars.get("LOCALAPPDATA");
+*/
+	
+/*  May not need this
+    // SERVLET PATH
+    // class member
+	@Autowired(required=true)
+	private HttpServletRequest request;
+	// Put this in a method
+	ServletContext servletContext = request.getSession().getServletContext();
+	String absoluteDiskPath = servletContext.getRealPath("/");
+	Cookie[] myCookies = request.getCookies();
+*/
+	
 
 }
