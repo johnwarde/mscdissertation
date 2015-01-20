@@ -6,16 +6,17 @@
 <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}"
 	href="../../css/bootstrap.min.css" />
 </head>
-<body onload="document.f.username.focus();">
+<body onload="document.form.imagename.focus();">
 	<div class="container">
 		<div th:replace="fragments/header :: header">...</div>	
 		<div class="content">
 			<h2>Upload Image</h2>
-			<p th:if="${imagename}" class="alert-info" th:inline="text">[[${imagename}]] has been uploaded</p>
+			<p th:if="${success == true}" class="alert alert-info" th:inline="text">[[${imagename}]] has been uploaded successfully.</p>
+			<p th:if="${success == false}" class="alert alert-error" th:inline="text">Upload of [[${imagename}]] has failed, check name.</p>
 			<form name="form" th:action="@{/upload}" action="/upload" method="POST" enctype="multipart/form-data">
 				<fieldset>
 					<input type="text" name="imagename" value="" placeholder="Image Name (no spaces)" />
-					<input type="file" name="file"  />
+					<input type="file" name="uploadfile"  />
 				</fieldset>
 				<input type="submit" id="upload" value="Upload" class="btn btn-primary" />
 			</form>

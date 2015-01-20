@@ -16,9 +16,11 @@
 
 package com.interop.webapp;
 
-import java.util.Date;
+import java.util.List;
 import java.util.Map;
+
 import javax.sql.DataSource;
+
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -30,7 +32,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -45,18 +46,23 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 @ComponentScan
 @Controller
 public class WebApp extends WebMvcConfigurerAdapter {
+	// TODO: Need to have the following file location in a configuration file somewhere
+	static String imageFilesRoot = "file:/Users/johnwarde/Downloads/webappresources";
+	static String imagesWebPath = "resources";
+	static String imagesWebPathMask = "/" + imagesWebPath + "/**";
+	
 	static Logger log = Logger.getLogger(WebApp.class.getName());
 
 	@RequestMapping("/")
 	public String home(Map<String, Object> model) {
-		log.info("HERE!!");
-	    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-	    String name = auth.getName(); //get logged in username
-		
-		model.put("message", String.format("Hello %s!", name));
-		model.put("title", "Hello Home");
-		model.put("date", new Date());
-
+		//log.info("HERE!!");
+	    String user = SecurityContextHolder.getContext().getAuthentication().getName();
+		UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
+		List<ImageDetailBean> collection = store.getWebPaths();	    
+		model.put("user", user);
+		model.put("imagesWebPath", imagesWebPath);
+		model.put("imagerefs", collection);
+		model.put("count", collection.size());
 		return "home";
 	}
 
@@ -68,9 +74,12 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	@RequestMapping(value = "/upload", method = RequestMethod.POST)
 	public String upload(Map<String, Object> model, 
 			@RequestParam(value="imagename", defaultValue="") String imagename, 
-			@RequestParam("file") MultipartFile uploadedfile) {
+			@RequestParam("uploadfile") MultipartFile uploadedfile) {
+	    String user = SecurityContextHolder.getContext().getAuthentication().getName();
+		UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
+		Boolean success = store.newUpload(imagename, uploadedfile);
+		model.put("success", success);
 		model.put("imagename", imagename);
-		//uploadedfile.transferTo(arg0);
 		return "upload";
 	}	
 
@@ -92,8 +101,7 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-    	// TODO: Need to have the following file location in a configuration file somewhere
-        registry.addResourceHandler("/resources/**").addResourceLocations("file:/Users/johnwarde/Downloads/webappresources/");
+        registry.addResourceHandler(imagesWebPathMask).addResourceLocations(imageFilesRoot + '/');
     }
     
 	@Bean
@@ -114,7 +122,7 @@ public class WebApp extends WebMvcConfigurerAdapter {
 		protected void configure(HttpSecurity http) throws Exception {
 			http
 				.authorizeRequests()
-				.antMatchers("/css/**","/resources/**").permitAll().anyRequest()
+				.antMatchers("/css/**", imagesWebPathMask).permitAll().anyRequest()
 					.fullyAuthenticated().and().formLogin().loginPage("/login")
 					.failureUrl("/login?error").permitAll();
 		}
@@ -126,7 +134,7 @@ public class WebApp extends WebMvcConfigurerAdapter {
 
 	}
 	
-	/*  May not need this
+	/*  May not need this ... but it works
 	// ENVIRONMENT VARIABLES
 	// class member
 	private AnnotationConfigWebApplicationContext serverContext = new AnnotationConfigWebApplicationContext();
@@ -136,7 +144,7 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	String imageStore = (String) envVars.get("LOCALAPPDATA");
 */
 	
-/*  May not need this
+/*  May not need this ... but it works
     // SERVLET PATH
     // class member
 	@Autowired(required=true)

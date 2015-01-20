@@ -9,9 +9,28 @@
 <body>
 	<div class="container">
 		<div th:replace="fragments/header :: header">...</div>		
-		<h1 th:text="${title}">Your images</h1>
-		<div th:text="${message}">Fake content</div>
-		<div id="created" th:text="${#dates.format(date)}">date goes here</div>
+		<h1 th:inline="text">Image files for [[${user}]]</h1>
+		<br/>		
+		<div th:if="${count == 0}" class="alert alert-info">No images, use upload.</div>
+		
+		<div th:each="i : ${imagerefs}">
+			<br/>
+			<br/>
+			<div>
+				<a th:href="${'/image?name=' + i.getImageName()}">
+					<img th:alt-title="${i.getImageName()}" th:src="${imagesWebPath + '/' + i.getRelativePath()}" />
+				</a>
+			</div>
+			<div>
+				<h2>
+					<a th:href="${'/image?name=' + i.getImageName()}" th:text="${i.getImageName()}">image name does here</a>
+				</h2>
+			</div>
+		</div>
+		<br/>
+		<br/>
+		<div th:if="${count == 1}" th:inline="text" class="alert alert-info">[[${count}]] image</div>
+		<div th:if="${count > 1}" th:inline="text" class="alert alert-info">[[${count}]] images</div>
 	</div>
 </body>
 </html>
