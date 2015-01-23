@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	  xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
+<head>
+<title>Login</title>
+<link rel="stylesheet" th:href="@{/css/bootstrap.min.css}"
+	href="../../css/bootstrap.min.css" />
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+
+<script th:inline="javascript">
+/* <![CDATA[ */
+
+var effectName = 'Blur';
+var imageName = 'Blah.jpg';
+var requestUri = '/effectrequest?name=' + effectName + '&imagename=' + imageName;
+
+
+$(document).ready(function() {
+    $.ajax({
+        url: /*[+   [[${hostname}]] + requestUri   +]*/
+    }).then(function(data) {
+       $('.effect').append(data.id);
+       $('.image').append(data.content);
+    });
+
+});
+
+/* ]]> */
+
+</script>
+<body onload="document.form.imagename.focus();">
+	<div class="container">
+		<div th:replace="fragments/header :: header">...</div>	
+		<div class="content">
+			<h2>Image Effects</h2>
+			<p th:if="${success == true}" class="alert alert-info" th:inline="text">[[${imagename}]] has been uploaded successfully.</p>
+			<p th:if="${success == false}" class="alert alert-error" th:inline="text">Upload of [[${imagename}]] has failed, check name.</p>
+        <div>
+            <p class="effect">The effect is </p>
+            <p class="image">The image is </p>
+        </div>
+			
+			<br/>
+			<br/>
+			<div class="pull-left">
+				<div>
+					<img th:alt-title="${imagename}" th:src="${imagesWebPath + '/' + imageref}" />
+				</div>
+				<div>
+					<h2 th:text="${imagename}">image name does here</h2>				
+				</div>
+			</div>
+			<div class="pull-right">
+				<form name="form" th:action="@{/image}" action="/image" method="POST">
+					<fieldset>
+						<input type="hidden" name="user" value="${user}" />
+						<input type="hidden" name="imagename" value="${imagename}" />
+						<input type="hidden" name="queueid" value="" />
+						Effect :
+						<select name="effect">
+							<option>Select</option>
+							<option th:each="e : ${effects}" th:text="${e}"></option>
+						</select>
+						<!-- <input type="text" name="imagename" value="" placeholder="Image Name (no spaces)" /> -->
+					</fieldset>
+					<input type="submit" id="save" value="Save" class="btn btn-primary" />
+				</form>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

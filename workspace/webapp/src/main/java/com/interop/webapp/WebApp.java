@@ -18,6 +18,7 @@ package com.interop.webapp;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.sql.DataSource;
 
@@ -37,6 +38,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
@@ -46,13 +48,31 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 @ComponentScan
 @Controller
 public class WebApp extends WebMvcConfigurerAdapter {
-	// TODO: Need to have the following file location in a configuration file somewhere
+	// TODO: Need to have the following in a configuration file somewhere
 	static String imageFilesRoot = "file:/Users/johnwarde/Downloads/webappresources";
+	static String hostname = "http://localhost:8080";
+
 	static String imagesWebPath = "resources";
 	static String imagesWebPathMask = "/" + imagesWebPath + "/**";
 	
 	static Logger log = Logger.getLogger(WebApp.class.getName());
 
+    private static final String template = "Hello, %s!";
+    private final AtomicLong counter = new AtomicLong();
+	
+    @RequestMapping("/effectrequest")
+    public @ResponseBody EffectRequest effect(
+            @RequestParam(value="name", required=false, defaultValue="") String name,
+            @RequestParam(value="imagename", required=false, defaultValue="") String imagename) {
+	    String user = SecurityContextHolder.getContext().getAuthentication().getName();
+	    
+	    //RequestContextHolder.getRequestAttributes();
+    	System.out.println("==== in greeting ====");
+        return new EffectRequest(counter.incrementAndGet(),
+                            String.format(template, user));
+    }
+	
+	
 	@RequestMapping("/")
 	public String home(Map<String, Object> model) {
 		//log.info("HERE!!");
@@ -66,6 +86,20 @@ public class WebApp extends WebMvcConfigurerAdapter {
 		return "home";
 	}
 
+	@RequestMapping(value = "/image", method = RequestMethod.GET)
+	public String image(Map<String, Object> model, @RequestParam("name") String imageName) {
+	    String user = SecurityContextHolder.getContext().getAuthentication().getName();
+		UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
+		model.put("hostname", hostname);
+		model.put("user", user);
+		model.put("imagesWebPath", imagesWebPath);
+		model.put("imagename", imageName);
+		model.put("imageref", store.getWebPath(imageName));
+		model.put("effects", new String[]{"Blur", "Gaussian", "Invert"});
+		model.put("message", "");
+		return "image";
+	}
+		
 	@RequestMapping(value = "/upload", method = RequestMethod.GET)
 	public String upload(Map<String, Object> model) {
 		return "upload";
