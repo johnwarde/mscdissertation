@@ -1,14 +1,22 @@
+/**
+ * 
+ */
 package com.interop.webapp;
 
-
-public class EffectRequest {
+/**
+ * @author johnwarde
+ *
+ */
+public class EffectFetch {
 
     private final String status;
     private final String requestId;
+    private final String url;
 
-    public EffectRequest(String status, String requestId) {
+    public EffectFetch(String status, String requestId, String url) {
         this.status = status;
         this.requestId = requestId;
+        this.url = url;
     }
 
     public String getStatus() {
@@ -18,4 +26,10 @@ public class EffectRequest {
     public String getRequestId() {
         return requestId;
     }
+    
+    public String getUrl() {
+        return url;
+    }
+
+	
 }

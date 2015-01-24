@@ -18,7 +18,7 @@ package com.interop.webapp;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Random;
 
 import javax.sql.DataSource;
 
@@ -35,6 +35,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -57,28 +58,61 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	
 	static Logger log = Logger.getLogger(WebApp.class.getName());
 
-    private static final String template = "Hello, %s!";
-    private final AtomicLong counter = new AtomicLong();
-	
-    @RequestMapping("/effectrequest")
-    public @ResponseBody EffectRequest effect(
-            @RequestParam(value="name", required=false, defaultValue="") String name,
-            @RequestParam(value="imagename", required=false, defaultValue="") String imagename) {
+	private Random randomGenerator = new Random();
+
+    /*
+     * Because we are sending in a filename, we needed to add the 
+     * regular expression to the end of the RequestMapping because Spring 
+     * defaults to a regular expression of [^.]* (everything but a period)
+     * However, because we a sending names of image/binary files either
+     * Tomcat or the Spring component MappingJackson2HttpMessageConverter
+     * decides that the JSON content that we are sending back does not match 
+     * the content requested and sends back a HTTP error code 406 back to the
+     * client.
+     */
+//    @RequestMapping(value="/effectrequest/{name}/{imagename:[a-zA-Z0-9%\\.]*}", 
+      @RequestMapping(value="/effectrequest/{name}/{imagename}", 
+    		headers="Accept=*/*", method=RequestMethod.GET, 
+    		produces = "application/json")
+    public @ResponseBody EffectRequest effectRequest(
+    		@PathVariable("name") String name,
+    		@PathVariable("imagename") String imageName)    		
+    {
 	    String user = SecurityContextHolder.getContext().getAuthentication().getName();
-	    
 	    //RequestContextHolder.getRequestAttributes();
-    	System.out.println("==== in greeting ====");
-        return new EffectRequest(counter.incrementAndGet(),
-                            String.format(template, user));
+	    System.out.println("==== in effectrequest ====");
+    	String statusFake = "submitted";
+    	String requestIdFake = "2938yr43i74rhj";
+        return new EffectRequest(statusFake, requestIdFake);
     }
-	
+
+      @RequestMapping(value="/effectfetch/{requestid}", 
+    		headers="Accept=*/*", method=RequestMethod.GET, 
+    		produces = "application/json")
+    public @ResponseBody EffectFetch effectFetch(
+    		@PathVariable("requestid") String requestId)    		
+    {
+	    String user = SecurityContextHolder.getContext().getAuthentication().getName();
+    	System.out.println("==== in effectfetch ====");
+    	String statusFake = "notready";
+    	String urlFake = "";
+    	Boolean[] picker = {false, false, true, false};
+        int randomInt = randomGenerator.nextInt(picker.length);
+        if (picker[randomInt]) {
+        	statusFake = "completed";
+    		UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
+        	urlFake = "/" + imagesWebPath + "/" + store.getWebPath("Pierce.jpg");
+        }
+        return new EffectFetch(statusFake, requestId, urlFake);
+    }
+
 	
 	@RequestMapping("/")
 	public String home(Map<String, Object> model) {
 		//log.info("HERE!!");
 	    String user = SecurityContextHolder.getContext().getAuthentication().getName();
 		UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
-		List<ImageDetailBean> collection = store.getWebPaths();	    
+		List<ImageDetailBean> collection = store.getWebPaths();
 		model.put("user", user);
 		model.put("imagesWebPath", imagesWebPath);
 		model.put("imagerefs", collection);
