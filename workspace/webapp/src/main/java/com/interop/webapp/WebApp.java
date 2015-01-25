@@ -55,10 +55,102 @@ public class WebApp extends WebMvcConfigurerAdapter {
 
 	static String imagesWebPath = "resources";
 	static String imagesWebPathMask = "/" + imagesWebPath + "/**";
-	
+
 	static Logger log = Logger.getLogger(WebApp.class.getName());
 
 	private Random randomGenerator = new Random();
+
+
+	/**
+	 * @return
+	 */
+	private String getLoggedInUser() {
+		return SecurityContextHolder.getContext().getAuthentication().getName();
+	}
+	
+	
+	@RequestMapping("/")
+	public String home(Map<String, Object> model) {
+		//log.info("HERE!!");
+	    String user = getLoggedInUser();
+		UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
+		List<ImageDetailBean> collection = store.getWebPaths();
+		model.put("user", user);
+		model.put("imagesWebPath", imagesWebPath);
+		model.put("imagerefs", collection);
+		model.put("count", collection.size());
+		return "home";
+	}
+
+
+	@RequestMapping(value = "/image", method = RequestMethod.GET)
+	public String image(Map<String, Object> model, @RequestParam("name") String imageName) {
+	    String user = getLoggedInUser();
+		UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
+		model.put("hostname", hostname);
+		model.put("user", user);
+		model.put("imagesWebPath", imagesWebPath);
+		model.put("imagename", imageName);
+		model.put("imageref", store.getWebPath(imageName));
+		model.put("effects", new String[]{"Blur", "Gaussian", "Invert"});
+		model.put("message", "");
+		return "image";
+	}
+	
+
+	@RequestMapping(value = "/image", method = RequestMethod.POST)
+	public String imageSave(Map<String, Object> model, 
+			@RequestParam(value="imagename", defaultValue="") String imageName, 
+			@RequestParam(value="imagenew", defaultValue="") String imageNew) {
+/*
+		// TODO: Following logic is disabled until we get messaging going.
+		String user = getLoggedInUser();
+		if (false && !imageNew.equals("")) {
+			// We have a new image from processing, need to replace the original.
+			UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
+			String destFilename = store.getPath(imageName);
+			// TODO: needs to change
+			String srcFilename = store.getPath(imageNew);
+			try {
+				Files.move(Paths.get(srcFilename), Paths.get(destFilename), REPLACE_EXISTING );
+			} catch (Exception e) {
+				log.error(String.format("Failed to copy [%s] to [%s]", srcFilename, destFilename));
+			}			
+		}
+*/		
+		//Boolean success = store.newUpload(imageName, uploadedfile);
+		return "redirect:/";
+	}
+
+		
+	@RequestMapping(value = "/upload", method = RequestMethod.GET)
+	public String upload(Map<String, Object> model) {
+		return "upload";
+	}
+
+	@RequestMapping(value = "/upload", method = RequestMethod.POST)
+	public String upload(Map<String, Object> model, 
+			@RequestParam(value="imagename", defaultValue="") String imagename, 
+			@RequestParam("uploadfile") MultipartFile uploadedfile) {
+		String user = getLoggedInUser();
+		UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
+		Boolean success = store.newUpload(imagename, uploadedfile);
+		model.put("success", success);
+		model.put("imagename", imagename);
+		return "upload";
+	}
+
+	@RequestMapping("/logout")
+	public String logout(Map<String, Object> model) {
+		SecurityContextHolder.getContext().getAuthentication().setAuthenticated(false);
+		return "redirect:/";
+	}
+
+
+
+/*
+ * REST methods for AJAX calls from client
+ */
 
     /*
      * Because we are sending in a filename, we needed to add the 
@@ -78,7 +170,7 @@ public class WebApp extends WebMvcConfigurerAdapter {
     		@PathVariable("name") String name,
     		@PathVariable("imagename") String imageName)    		
     {
-	    String user = SecurityContextHolder.getContext().getAuthentication().getName();
+	    //String user = getLoggedInUser();
 	    //RequestContextHolder.getRequestAttributes();
 	    System.out.println("==== in effectrequest ====");
     	String statusFake = "submitted";
@@ -92,7 +184,7 @@ public class WebApp extends WebMvcConfigurerAdapter {
     public @ResponseBody EffectFetch effectFetch(
     		@PathVariable("requestid") String requestId)    		
     {
-	    String user = SecurityContextHolder.getContext().getAuthentication().getName();
+	    String user = getLoggedInUser();
     	System.out.println("==== in effectfetch ====");
     	String statusFake = "notready";
     	String urlFake = "";
@@ -106,58 +198,6 @@ public class WebApp extends WebMvcConfigurerAdapter {
         return new EffectFetch(statusFake, requestId, urlFake);
     }
 
-	
-	@RequestMapping("/")
-	public String home(Map<String, Object> model) {
-		//log.info("HERE!!");
-	    String user = SecurityContextHolder.getContext().getAuthentication().getName();
-		UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
-		List<ImageDetailBean> collection = store.getWebPaths();
-		model.put("user", user);
-		model.put("imagesWebPath", imagesWebPath);
-		model.put("imagerefs", collection);
-		model.put("count", collection.size());
-		return "home";
-	}
-
-	@RequestMapping(value = "/image", method = RequestMethod.GET)
-	public String image(Map<String, Object> model, @RequestParam("name") String imageName) {
-	    String user = SecurityContextHolder.getContext().getAuthentication().getName();
-		UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
-		model.put("hostname", hostname);
-		model.put("user", user);
-		model.put("imagesWebPath", imagesWebPath);
-		model.put("imagename", imageName);
-		model.put("imageref", store.getWebPath(imageName));
-		model.put("effects", new String[]{"Blur", "Gaussian", "Invert"});
-		model.put("message", "");
-		return "image";
-	}
-		
-	@RequestMapping(value = "/upload", method = RequestMethod.GET)
-	public String upload(Map<String, Object> model) {
-		return "upload";
-	}
-
-	@RequestMapping(value = "/upload", method = RequestMethod.POST)
-	public String upload(Map<String, Object> model, 
-			@RequestParam(value="imagename", defaultValue="") String imagename, 
-			@RequestParam("uploadfile") MultipartFile uploadedfile) {
-	    String user = SecurityContextHolder.getContext().getAuthentication().getName();
-		UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
-		Boolean success = store.newUpload(imagename, uploadedfile);
-		model.put("success", success);
-		model.put("imagename", imagename);
-		return "upload";
-	}	
-
-/*  // TODO: Doesn't work
-	@RequestMapping("/logout")
-	public String logout(Map<String, Object> model) {
-		return "redirect:/";
-	}
-*/
-	
 	public static void main(String[] args) throws Exception {
 		new SpringApplicationBuilder(WebApp.class).run(args);
 	}
