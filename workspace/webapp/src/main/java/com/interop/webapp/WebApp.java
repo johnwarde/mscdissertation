@@ -49,10 +49,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 @ComponentScan
 @Controller
 public class WebApp extends WebMvcConfigurerAdapter {
-	// TODO: Need to have the following in a configuration file somewhere
-	static String imageFilesRoot = "file:/Users/johnwarde/Downloads/webappresources";
-	static String hostname = "http://localhost:8080";
-
+	@Autowired
+	private WebAppConfig config;
+	
 	static String imagesWebPath = "resources";
 	static String imagesWebPathMask = "/" + imagesWebPath + "/**";
 
@@ -67,13 +66,16 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	private String getLoggedInUser() {
 		return SecurityContextHolder.getContext().getAuthentication().getName();
 	}
-	
+
 	
 	@RequestMapping("/")
 	public String home(Map<String, Object> model) {
 		//log.info("HERE!!");
+		System.out.println(this.config.getHostName());
+		System.out.println(this.config.getImageFilesRoot());
+		
 	    String user = getLoggedInUser();
-		UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
+		UserImageFileRepository store = new UserImageFileRepository(user, config.getImageFilesRoot());
 		List<ImageDetailBean> collection = store.getWebPaths();
 		model.put("user", user);
 		model.put("imagesWebPath", imagesWebPath);
@@ -86,8 +88,8 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	@RequestMapping(value = "/image", method = RequestMethod.GET)
 	public String image(Map<String, Object> model, @RequestParam("name") String imageName) {
 	    String user = getLoggedInUser();
-		UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
-		model.put("hostname", hostname);
+		UserImageFileRepository store = new UserImageFileRepository(user, config.getImageFilesRoot());
+		model.put("hostname", config.getHostName());
 		model.put("user", user);
 		model.put("imagesWebPath", imagesWebPath);
 		model.put("imagename", imageName);
@@ -133,7 +135,7 @@ public class WebApp extends WebMvcConfigurerAdapter {
 			@RequestParam(value="imagename", defaultValue="") String imagename, 
 			@RequestParam("uploadfile") MultipartFile uploadedfile) {
 		String user = getLoggedInUser();
-		UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
+		UserImageFileRepository store = new UserImageFileRepository(user, config.getImageFilesRoot());
 		Boolean success = store.newUpload(imagename, uploadedfile);
 		model.put("success", success);
 		model.put("imagename", imagename);
@@ -192,16 +194,16 @@ public class WebApp extends WebMvcConfigurerAdapter {
         int randomInt = randomGenerator.nextInt(picker.length);
         if (picker[randomInt]) {
         	statusFake = "completed";
-    		UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
+    		UserImageFileRepository store = new UserImageFileRepository(user, config.getImageFilesRoot());
         	urlFake = "/" + imagesWebPath + "/" + store.getWebPath("Pierce.jpg");
         }
         return new EffectFetch(statusFake, requestId, urlFake);
     }
 
 	public static void main(String[] args) throws Exception {
-		new SpringApplicationBuilder(WebApp.class).run(args);
+		new SpringApplicationBuilder(WebApp.class, "classpath:/META-INF/application-context.xml").run(args);
 	}
-
+ 
 	@Override
 	public void addViewControllers(ViewControllerRegistry registry) {
 		registry.addViewController("/login").setViewName("login");
@@ -209,7 +211,7 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler(imagesWebPathMask).addResourceLocations(imageFilesRoot + '/');
+        registry.addResourceHandler(imagesWebPathMask).addResourceLocations(config.getImageFilesRoot() + '/');
     }
     
 	@Bean

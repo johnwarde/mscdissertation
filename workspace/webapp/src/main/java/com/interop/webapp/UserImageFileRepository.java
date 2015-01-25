@@ -10,6 +10,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.log4j.Logger;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -19,6 +20,8 @@ import org.springframework.web.multipart.MultipartFile;
 public final class UserImageFileRepository extends UserImageRepository {
 	// Root of the file repository.
 	private String root;
+
+	static Logger log = Logger.getLogger(WebApp.class.getName());
 	
 	/**
 	 * @param owner
@@ -83,7 +86,8 @@ public final class UserImageFileRepository extends UserImageRepository {
 		if (imageFile.exists()) {
 			return false;
 		}
-	    System.out.println("moving uploaded image file to : " + filename);	
+	    System.out.println("moving uploaded image file to : " + filename);
+	    log.info("moving uploaded image file to : " + filename);	    
     	try {
 			FileOutputStream fos = new FileOutputStream(URI.create(filename).getRawPath());
 			fos.write(uploadedfile.getBytes());
@@ -91,7 +95,8 @@ public final class UserImageFileRepository extends UserImageRepository {
 		} catch (IllegalStateException e) {
 		    System.out.println(String.format("ERROR: moving uploaded image file: %s (%s)", filename, e.getMessage()));		    	
 		} catch (IOException e) {
-		    System.out.println(String.format("ERROR: moving uploaded image file: %s (%s)", filename, e.getMessage()));		    	
+		    System.out.println(String.format("ERROR: moving uploaded image file: %s (%s)", filename, e.getMessage()));
+		    log.error(String.format("moving uploaded image file: %s (%s)", filename, e.getMessage()));
 		}
 		return true;
 	}
