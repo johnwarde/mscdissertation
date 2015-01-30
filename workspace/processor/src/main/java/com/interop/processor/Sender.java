@@ -1,7 +1,7 @@
 /**
  * 
  */
-package processor;
+package com.interop.processor;
 
 /**
  * @author johnwarde

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package processor;
+package com.interop.processor;
 
 /**
  * @author johnwarde
@@ -78,6 +78,8 @@ public class ProcessorApp {
 	    if (n == 1) return 1;
 	    return fib(n-1) + fib(n-2);
 	}
+	
+	
 	private static final String RPC_QUEUE_NAME = "rpc_queue";
 	private static final String HOST_NAME = "localhost";
 	
@@ -99,8 +101,6 @@ public class ProcessorApp {
 
 		log.info(String.format("processorstart\tsuccess\t%s", HOST_NAME));			
     	
-//    	System.out.println(" [x] Awaiting RPC requests");
-
     	while (true) {
     	    QueueingConsumer.Delivery delivery = consumer.nextDelivery();
 
