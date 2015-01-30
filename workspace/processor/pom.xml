@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<!-- PARENT -->
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>1.2.2.BUILD-SNAPSHOT</version>
+	</parent>
+
+	<!-- PROJECT INFO -->
+	<groupId>com.interop.processor</groupId>
+	<artifactId>processor</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>Interop Processor App</name>
+	<description>Interop Processor Application will process files from the WebApp, based on the Spring Boot Starter AMPQ project</description>
+	<url>https://github.com/johnwarde/mscdissertation</url>
+	<organization>
+		<name>John Warde</name>
+		<url>https://www.linkedin.com/in/johnwarde</url>
+	</organization>
+
+    <!-- DEPENDENCIES -->
+    
+    <dependencies>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+
+    </dependencies>
+
+	<!-- REPOSITORIES -->
+    <repositories>
+        <repository>
+            <id>spring-snapshots</id>
+            <url>http://repo.spring.io/snapshot</url>
+            <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+        <repository>
+            <id>spring-milestones</id>
+            <url>http://repo.spring.io/milestone</url>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>spring-snapshots</id>
+            <url>http://repo.spring.io/snapshot</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>spring-milestones</id>
+            <url>http://repo.spring.io/milestone</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+	<!-- BUILD PLUGINS -->
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+	<issueManagement>
+		<system>GitHub Issues</system>
+		<url>https://github.com/johnwarde/mscdissertation/issues</url>
+	</issueManagement>
+</project>

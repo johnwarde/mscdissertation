@@ -13,23 +13,16 @@
 	<groupId>com.interop.webapp</groupId>
 	<artifactId>webapp</artifactId>
 	<name>Interop Web App</name>
-	<description>Interop Web Application based from 
-Spring Boot Web Secure JDBC Sample
-</description>
+	<description>Interop Web Application based from Spring Boot Web Secure JDBC Sample</description>
 	<url>https://github.com/johnwarde/mscdissertation</url>
 	<organization>
 		<name>John Warde</name>
 		<url>https://www.linkedin.com/in/johnwarde</url>
 	</organization>
 
-<!--	
-	<properties>
-		<main.basedir>${basedir}/../..</main.basedir>
-	</properties>
- -->
-
-	<!-- DEPENDENCIES -->
-	<dependencies>
+    <!-- DEPENDENCIES -->
+    
+    <dependencies>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -46,6 +39,11 @@ Spring Boot Web Secure JDBC Sample
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

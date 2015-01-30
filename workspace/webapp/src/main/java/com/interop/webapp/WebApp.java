@@ -16,13 +16,22 @@
 
 package com.interop.webapp;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-
+import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 
 import org.apache.log4j.Logger;
+
+import com.rabbitmq.client.*;
+import com.rabbitmq.client.AMQP.BasicProperties;
+
+/*
+import org.springframework.amqp.core.AmqpAdmin;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+*/
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
@@ -41,6 +50,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
@@ -57,11 +67,34 @@ public class WebApp extends WebMvcConfigurerAdapter {
 
 	static Logger log = Logger.getLogger(WebApp.class.getName());
 
-	private Random randomGenerator = new Random();
+	private Connection connection;
+	private Channel channel;
+	private String requestQueueName = "rpc_queue";
+	private String replyQueueName;
+	private QueueingConsumer consumer;	
+	
+    @Override
+    public void configureContentNegotiation(
+            ContentNegotiationConfigurer configurer) {
+        configurer.favorPathExtension(false);
+    }	
+
+	@PostConstruct
+	public void setUpQueue() throws Exception {
+
+	    ConnectionFactory factory = new ConnectionFactory();
+	    factory.setHost("localhost");
+	    connection = factory.newConnection();
+	    channel = connection.createChannel();
+
+	    replyQueueName = channel.queueDeclare().getQueue(); 
+	    consumer = new QueueingConsumer(channel);
+	    channel.basicConsume(replyQueueName, true, consumer);	    
+	}
 
 
 	/**
-	 * @return
+	 * @return String - logged in user
 	 */
 	private String getLoggedInUser() {
 		return SecurityContextHolder.getContext().getAuthentication().getName();
@@ -70,10 +103,6 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	
 	@RequestMapping("/")
 	public String home(Map<String, Object> model) {
-		//log.info("HERE!!");
-		System.out.println(this.config.getHostName());
-		System.out.println(this.config.getImageFilesRoot());
-		
 	    String user = getLoggedInUser();
 		UserImageFileRepository store = new UserImageFileRepository(user, config.getImageFilesRoot());
 		List<ImageDetailBean> collection = store.getWebPaths();
@@ -164,40 +193,71 @@ public class WebApp extends WebMvcConfigurerAdapter {
      * the content requested and sends back a HTTP error code 406 back to the
      * client.
      */
-//    @RequestMapping(value="/effectrequest/{name}/{imagename:[a-zA-Z0-9%\\.]*}", 
-      @RequestMapping(value="/effectrequest/{name}/{imagename}", 
+    @RequestMapping(value="/effectrequest/{name}/{imagename:[a-zA-Z0-9%\\.]*}", 
     		headers="Accept=*/*", method=RequestMethod.GET, 
     		produces = "application/json")
     public @ResponseBody EffectRequest effectRequest(
     		@PathVariable("name") String name,
     		@PathVariable("imagename") String imageName)    		
     {
-	    //String user = getLoggedInUser();
-	    //RequestContextHolder.getRequestAttributes();
-	    System.out.println("==== in effectrequest ====");
-    	String statusFake = "submitted";
-    	String requestIdFake = "2938yr43i74rhj";
-        return new EffectRequest(statusFake, requestIdFake);
+	    String user = getLoggedInUser();
+		String hostName = this.config.getHostName();
+
+		String status = "submitted";
+    	String message = "30";
+        String correlationId = java.util.UUID.randomUUID().toString();
+
+        BasicProperties props = new BasicProperties
+                                    .Builder()
+                                    .correlationId(correlationId)
+                                    .replyTo(replyQueueName)
+                                    .build();
+        try {
+			channel.basicPublish("", requestQueueName, props, message.getBytes());
+			log.info(String.format("effectrequest\tsuccess\t%s\t%s\t%s", hostName, user, correlationId));
+		} catch (IOException e) {
+			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", hostName, user, correlationId, e.getMessage()));
+			status = "failed";
+		}
+        return new EffectRequest(status, correlationId);
     }
 
-      @RequestMapping(value="/effectfetch/{requestid}", 
+
+    @RequestMapping(value="/effectfetch/{requestid}", 
     		headers="Accept=*/*", method=RequestMethod.GET, 
     		produces = "application/json")
     public @ResponseBody EffectFetch effectFetch(
-    		@PathVariable("requestid") String requestId)    		
+    		@PathVariable("requestid") String correlationId)    		
     {
 	    String user = getLoggedInUser();
-    	System.out.println("==== in effectfetch ====");
-    	String statusFake = "notready";
-    	String urlFake = "";
-    	Boolean[] picker = {false, false, true, false};
-        int randomInt = randomGenerator.nextInt(picker.length);
-        if (picker[randomInt]) {
-        	statusFake = "completed";
-    		UserImageFileRepository store = new UserImageFileRepository(user, config.getImageFilesRoot());
-        	urlFake = "/" + imagesWebPath + "/" + store.getWebPath("Pierce.jpg");
-        }
-        return new EffectFetch(statusFake, requestId, urlFake);
+		String hostName = this.config.getHostName();
+    	String status = "notready";
+    	String url = "";
+    	
+    	@SuppressWarnings("unused")
+    	String response = null;
+    	QueueingConsumer.Delivery delivery = null;
+    	try {
+			delivery = consumer.nextDelivery(333);
+	        if (delivery != null &&
+	        	delivery.getProperties().getCorrelationId().equals(correlationId)) {
+	            response = new String(delivery.getBody());
+	            status = "completed";
+	    		UserImageFileRepository store = new UserImageFileRepository(user, config.getImageFilesRoot());
+	    		url = "/" + imagesWebPath + "/" + store.getWebPath("Pierce.jpg");
+				log.info(String.format("effectfetch\tsuccess\t%s\t%s\t%s", hostName, user, correlationId));
+	        }
+		} catch (ShutdownSignalException e) {
+			status = "failed";
+			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", hostName, user, correlationId, e.getMessage()));			
+		} catch (ConsumerCancelledException e) {
+			status = "failed";
+			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", hostName, user, correlationId, e.getMessage()));			
+		} catch (InterruptedException e) {
+			status = "failed";
+			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", hostName, user, correlationId, e.getMessage()));			
+		}
+        return new EffectFetch(status, correlationId, url);
     }
 
 	public static void main(String[] args) throws Exception {

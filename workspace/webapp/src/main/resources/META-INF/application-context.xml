@@ -9,8 +9,8 @@
     <context:property-placeholder/>
 
     <bean id="config" class="com.interop.webapp.WebAppConfig">
-	    <property name="hostName" value="http://localhost:8080" />
-	    <property name="imageFilesRoot" value="file:/Users/johnwarde/Downloads/webappresources" />
+	    <property name="hostName" value="http://${webapp.hostname}:${server.port}" />
+	    <property name="imageFilesRoot" value="${webapp.imageFilesRoot}" />
     </bean>
 
 </beans>

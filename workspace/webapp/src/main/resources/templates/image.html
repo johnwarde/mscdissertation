@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org"
 	  xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
 <head>
-<title>Login</title>
+<title>Image</title>
 <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}"
 	href="../../css/bootstrap.min.css" />
 </head>
@@ -11,35 +11,44 @@
 <script th:inline="javascript">
 
 var timeOut = 500;
+var requestTimeOut = 30 * 1000; // secs multiplied to get milleseconds
 var timeStart;
 
 $(document).ready(function() {
 	$("#effect").change(function(){
 		//Need to encode the perod in filename otherwise we get a HTTP 406 error.
 		var effectName = $(this).val();
-		var imageName = $("#imagename").val().replace('.','[DOT]');
+        var imageName = $("#imagename").val();
 		var requestUri = '/effectrequest/' + effectName + '/' + imageName;
 	    $.ajax({
 	        url: /*[+   [[${hostname}]] + requestUri  +]*/
 	    }).then(function(data) {
-	        timeStart = new Date();
-	       $("#requestidentider").val(data.requestId);
-	       var timeNow = new Date();
-	       var milliseconds = timeNow.getTime() - timeStart.getTime();
-	       var msg = 'Request submitted, ' + milliseconds + ' milliseconds elapsed.';
-	       $("#msgbox").text(msg);
-	       $( "#save" ).prop( "disabled", true );
-	       $( "#effect" ).prop( "disabled", true );
-	       $("<div />").css({
-	    	    position: "absolute",
-	    	    width: "100%",
-	    	    height: "100%",
-	    	    left: 0,
-	    	    top: 0,
-	    	    zIndex: 1000000,  // to be on the safe side
-	    	    background: "url(http://j1edit.com/images/icon-loading-animated.gif) no-repeat 50% 50%"
-	    	}).attr("id","rendering").appendTo($("#imagecontainer").css("position", "relative"));
-	       setTimeout("checkRequest();", timeOut);
+	            switch(data.status) {
+	               case 'submitted':
+					   timeStart = new Date();
+					   $("#requestidentider").val(data.requestId);
+					   var timeNow = new Date();
+					   var milliseconds = timeNow.getTime() - timeStart.getTime();
+					   var msg = 'Request submitted, ' + milliseconds + ' milliseconds elapsed.';
+					   $("#msgbox").text(msg);
+					   $( "#save" ).prop( "disabled", true );
+					   $( "#effect" ).prop( "disabled", true );
+					   $("<div />").css({
+					    position: "absolute",
+					    width: "100%",
+					    height: "100%",
+					    left: 0,
+					    top: 0,
+					    zIndex: 1000000,  // to be on the safe side
+					    background: "url(http://j1edit.com/images/icon-loading-animated.gif) no-repeat 50% 50%"
+					        }).attr("id","rendering").appendTo($("#imagecontainer").css("position", "relative"));
+					    setTimeout("checkRequest();", timeOut);
+					    break;
+                   case 'submitted':
+	                    var msg = 'Request failed, please try again.';
+	                    $("#msgbox").text(msg);
+                       break;
+	            }
 	    });
 	});
 });
@@ -66,9 +75,17 @@ function checkRequest(){
 	       case 'notready':
 		       var timeNow = new Date();
 		       var milliseconds = timeNow.getTime() - timeStart.getTime();
-		       var msg = 'Processing continuing, ' + milliseconds + ' milliseconds elapsed.';
+		       var msg = "";
+		       if (milliseconds > requestTimeOut) {
+		    	   msg = 'Failed to get a reply for request after ' + milliseconds + ' milliseconds.';
+	               $( "#save" ).prop( "disabled", false );
+	               $( "#effect" ).prop( "disabled", false );
+	               $( "#rendering" ).remove();
+		       } else {
+		           msg = 'Processing continuing, ' + milliseconds + ' milliseconds elapsed.';
+	               setTimeout("checkRequest();", timeOut);
+		       }
 		       $("#msgbox").text(msg);
-	           setTimeout("checkRequest();", timeOut);
 	           break;
 	       default:
 	    	   alert('Unknown error : ' + data.status);
@@ -99,7 +116,7 @@ function checkRequest(){
 					<fieldset>
  						<input type="hidden" id="imagename" name="imagename" th:value="${imagename}" value="" />
 						<input type="hidden" id="imagenew" name="imagenew" value="" />
-						<!-- <input type="hidden" id="requestidentider" name="requestid" value="" /> -->
+						<input type="hidden" id="requestidentider" name="requestid" value="" />
 						Effect :
 						<select id="effect" name="effect">
 							<option>Select</option>
