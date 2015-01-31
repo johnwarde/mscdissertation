@@ -44,7 +44,7 @@ $(document).ready(function() {
 					        }).attr("id","rendering").appendTo($("#imagecontainer").css("position", "relative"));
 					    setTimeout("checkRequest();", timeOut);
 					    break;
-                   case 'submitted':
+                   case 'failed':
 	                    var msg = 'Request failed, please try again.';
 	                    $("#msgbox").text(msg);
                        break;
@@ -53,6 +53,11 @@ $(document).ready(function() {
 	});
 });
 
+function resetWaitingUi() {
+    $( "#save" ).prop( "disabled", false );
+    $( "#effect" ).prop( "disabled", false );
+    $( "#rendering" ).remove();	
+}
 
 function checkRequest(){
 	var requestId = $("#requestidentider").val();
@@ -78,17 +83,20 @@ function checkRequest(){
 		       var msg = "";
 		       if (milliseconds > requestTimeOut) {
 		    	   msg = 'Failed to get a reply for request after ' + milliseconds + ' milliseconds.';
-	               $( "#save" ).prop( "disabled", false );
-	               $( "#effect" ).prop( "disabled", false );
-	               $( "#rendering" ).remove();
+		    	   resetWaitingUi();
 		       } else {
 		           msg = 'Processing continuing, ' + milliseconds + ' milliseconds elapsed.';
 	               setTimeout("checkRequest();", timeOut);
 		       }
 		       $("#msgbox").text(msg);
 	           break;
+           case 'failed':
+               var msg = 'Server side processing failed, please try again.';
+               resetWaitingUi();
+               break;
 	       default:
 	    	   alert('Unknown error : ' + data.status);
+	           resetWaitingUi();
    	   }
     });	
 }

@@ -17,8 +17,15 @@
 package com.interop.webapp;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static java.nio.file.StandardCopyOption.*;
+
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 
@@ -26,6 +33,7 @@ import org.apache.log4j.Logger;
 
 import com.rabbitmq.client.*;
 import com.rabbitmq.client.AMQP.BasicProperties;
+
 
 /*
 import org.springframework.amqp.core.AmqpAdmin;
@@ -63,6 +71,7 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	private WebAppConfig config;
 	
 	static String imagesWebPath = "resources";
+	static String processedFilesWebPath = "processedfiles";
 	static String imagesWebPathMask = "/" + imagesWebPath + "/**";
 
 	static Logger log = Logger.getLogger(WebApp.class.getName());
@@ -104,7 +113,8 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	@RequestMapping("/")
 	public String home(Map<String, Object> model) {
 	    String user = getLoggedInUser();
-		UserImageFileRepository store = new UserImageFileRepository(user, config.getImageFilesRoot());
+		UserImageFileRepository store = 
+				new UserImageFileRepository(user, config.getImageFilesRoot());
 		List<ImageDetailBean> collection = store.getWebPaths();
 		model.put("user", user);
 		model.put("imagesWebPath", imagesWebPath);
@@ -115,15 +125,17 @@ public class WebApp extends WebMvcConfigurerAdapter {
 
 
 	@RequestMapping(value = "/image", method = RequestMethod.GET)
-	public String image(Map<String, Object> model, @RequestParam("name") String imageName) {
+	public String image(Map<String, Object> model, 
+			@RequestParam("name") String imageName) {
 	    String user = getLoggedInUser();
-		UserImageFileRepository store = new UserImageFileRepository(user, config.getImageFilesRoot());
+		UserImageFileRepository store = 
+				new UserImageFileRepository(user, config.getImageFilesRoot());
 		model.put("hostname", config.getHostName());
 		model.put("user", user);
 		model.put("imagesWebPath", imagesWebPath);
 		model.put("imagename", imageName);
 		model.put("imageref", store.getWebPath(imageName));
-		model.put("effects", new String[]{"Blur", "Gaussian", "Invert"});
+		model.put("effects", new String[]{"Grayscale", "Gaussian", "Invert"});
 		model.put("message", "");
 		return "image";
 	}
@@ -133,23 +145,24 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	public String imageSave(Map<String, Object> model, 
 			@RequestParam(value="imagename", defaultValue="") String imageName, 
 			@RequestParam(value="imagenew", defaultValue="") String imageNew) {
-/*
-		// TODO: Following logic is disabled until we get messaging going.
 		String user = getLoggedInUser();
-		if (false && !imageNew.equals("")) {
+		String filesRoot = config.getImageFilesRoot();
+		if (!imageNew.equals("")) {
 			// We have a new image from processing, need to replace the original.
-			UserImageFileRepository store = new UserImageFileRepository(user, imageFilesRoot);
+			UserImageFileRepository store = 
+					new UserImageFileRepository(user, filesRoot);
 			String destFilename = store.getPath(imageName);
-			// TODO: needs to change
-			String srcFilename = store.getPath(imageNew);
+			String srcFilename = filesRoot + '/' + processedFilesWebPath  + 
+					'/' + imageNew.substring(imageNew.lastIndexOf('/') + 1);
 			try {
-				Files.move(Paths.get(srcFilename), Paths.get(destFilename), REPLACE_EXISTING );
+				Files.move(Paths.get(URI.create(srcFilename)), 
+						Paths.get(URI.create(destFilename)), 
+						REPLACE_EXISTING );
 			} catch (Exception e) {
-				log.error(String.format("Failed to copy [%s] to [%s]", srcFilename, destFilename));
+				log.error(String.format("Failed to copy [%s] to [%s] (%s)", 
+						srcFilename, destFilename, e.getMessage()));
 			}			
 		}
-*/		
-		//Boolean success = store.newUpload(imageName, uploadedfile);
 		return "redirect:/";
 	}
 
@@ -164,7 +177,8 @@ public class WebApp extends WebMvcConfigurerAdapter {
 			@RequestParam(value="imagename", defaultValue="") String imagename, 
 			@RequestParam("uploadfile") MultipartFile uploadedfile) {
 		String user = getLoggedInUser();
-		UserImageFileRepository store = new UserImageFileRepository(user, config.getImageFilesRoot());
+		UserImageFileRepository store = 
+				new UserImageFileRepository(user, config.getImageFilesRoot());
 		Boolean success = store.newUpload(imagename, uploadedfile);
 		model.put("success", success);
 		model.put("imagename", imagename);
@@ -173,7 +187,8 @@ public class WebApp extends WebMvcConfigurerAdapter {
 
 	@RequestMapping("/logout")
 	public String logout(Map<String, Object> model) {
-		SecurityContextHolder.getContext().getAuthentication().setAuthenticated(false);
+		SecurityContextHolder.getContext()
+			.getAuthentication().setAuthenticated(false);
 		return "redirect:/";
 	}
 
@@ -187,11 +202,11 @@ public class WebApp extends WebMvcConfigurerAdapter {
      * Because we are sending in a filename, we needed to add the 
      * regular expression to the end of the RequestMapping because Spring 
      * defaults to a regular expression of [^.]* (everything but a period)
-     * However, because we a sending names of image/binary files either
-     * Tomcat or the Spring component MappingJackson2HttpMessageConverter
-     * decides that the JSON content that we are sending back does not match 
-     * the content requested and sends back a HTTP error code 406 back to the
-     * client.
+     * However, because we a sending names of image/binary files the Spring 
+     * component MappingJackson2HttpMessageConverter determines that the JSON 
+     * content that we are sending back does not match the content requested 
+     * and sends back a HTTP error code 406 back to the client.  To mitigate
+     * this we need to define the configureContentNegotiation() method above.
      */
     @RequestMapping(value="/effectrequest/{name}/{imagename:[a-zA-Z0-9%\\.]*}", 
     		headers="Accept=*/*", method=RequestMethod.GET, 
@@ -202,10 +217,31 @@ public class WebApp extends WebMvcConfigurerAdapter {
     {
 	    String user = getLoggedInUser();
 		String hostName = this.config.getHostName();
+		UserImageFileRepository store = 
+				new UserImageFileRepository(user, config.getImageFilesRoot());
 
 		String status = "submitted";
-    	String message = "30";
         String correlationId = java.util.UUID.randomUUID().toString();
+
+
+		Map<String, Object> mapObject = new HashMap<String, Object>();
+		String imageFullPath = store.getPath(imageName);
+		String ext = imageFullPath.substring(imageFullPath.lastIndexOf('.') + 1);
+		String processedFileName = String.format("%s/%s/%s.%s", 
+				config.getImageFilesRoot(),
+				processedFilesWebPath, 
+				correlationId, ext);
+
+		mapObject.put("correlationId", correlationId);
+		mapObject.put("user", user);
+		mapObject.put("inputPath", imageFullPath);
+		mapObject.put("ouputPath", processedFileName);
+		mapObject.put("effectName", name);
+		mapObject.put("requestHost", hostName);
+		mapObject.put("requestCreated", "TODO:");
+
+		JsonWrapper objJson = new JsonWrapper();
+		String message = objJson.toJson(mapObject);
 
         BasicProperties props = new BasicProperties
                                     .Builder()
@@ -214,9 +250,11 @@ public class WebApp extends WebMvcConfigurerAdapter {
                                     .build();
         try {
 			channel.basicPublish("", requestQueueName, props, message.getBytes());
-			log.info(String.format("effectrequest\tsuccess\t%s\t%s\t%s", hostName, user, correlationId));
+			log.info(String.format("effectrequest\tsuccess\t%s\t%s\t%s", 
+					hostName, user, correlationId));
 		} catch (IOException e) {
-			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", hostName, user, correlationId, e.getMessage()));
+			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", 
+					hostName, user, correlationId, e.getMessage()));
 			status = "failed";
 		}
         return new EffectRequest(status, correlationId);
@@ -234,7 +272,6 @@ public class WebApp extends WebMvcConfigurerAdapter {
     	String status = "notready";
     	String url = "";
     	
-    	@SuppressWarnings("unused")
     	String response = null;
     	QueueingConsumer.Delivery delivery = null;
     	try {
@@ -242,26 +279,36 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	        if (delivery != null &&
 	        	delivery.getProperties().getCorrelationId().equals(correlationId)) {
 	            response = new String(delivery.getBody());
-	            status = "completed";
-	    		UserImageFileRepository store = new UserImageFileRepository(user, config.getImageFilesRoot());
-	    		url = "/" + imagesWebPath + "/" + store.getWebPath("Pierce.jpg");
-				log.info(String.format("effectfetch\tsuccess\t%s\t%s\t%s", hostName, user, correlationId));
+	    		JsonWrapper objJson = new JsonWrapper();
+	    		Map<String, Object> mapObject = objJson.fromJson(response);
+	            status = (String) mapObject.get("status");
+	            String newFileName = (String) mapObject.get("ouputPath");
+	            newFileName = 
+	            		newFileName.substring(newFileName.lastIndexOf('/') + 1);
+	    		url = "/" + imagesWebPath + "/" + 
+	            		processedFilesWebPath + "/" + newFileName;
+	    		log.info(String.format("effectfetch\t%s\t%s\t%s\t%s", 
+						status, hostName, user, correlationId));
 	        }
 		} catch (ShutdownSignalException e) {
 			status = "failed";
-			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", hostName, user, correlationId, e.getMessage()));			
+			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", 
+					hostName, user, correlationId, e.getMessage()));			
 		} catch (ConsumerCancelledException e) {
 			status = "failed";
-			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", hostName, user, correlationId, e.getMessage()));			
+			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", 
+					hostName, user, correlationId, e.getMessage()));			
 		} catch (InterruptedException e) {
 			status = "failed";
-			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", hostName, user, correlationId, e.getMessage()));			
+			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", 
+					hostName, user, correlationId, e.getMessage()));			
 		}
         return new EffectFetch(status, correlationId, url);
     }
 
 	public static void main(String[] args) throws Exception {
-		new SpringApplicationBuilder(WebApp.class, "classpath:/META-INF/application-context.xml").run(args);
+		new SpringApplicationBuilder(WebApp.class, 
+				"classpath:/META-INF/application-context.xml").run(args);
 	}
  
 	@Override
@@ -271,7 +318,8 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler(imagesWebPathMask).addResourceLocations(config.getImageFilesRoot() + '/');
+        registry.addResourceHandler(imagesWebPathMask)
+        	.addResourceLocations(config.getImageFilesRoot() + '/');
     }
     
 	@Bean
@@ -303,27 +351,5 @@ public class WebApp extends WebMvcConfigurerAdapter {
 		}
 
 	}
-	
-	/*  May not need this ... but it works
-	// ENVIRONMENT VARIABLES
-	// class member
-	private AnnotationConfigWebApplicationContext serverContext = new AnnotationConfigWebApplicationContext();
-	// Put this in a method
-	ConfigurableEnvironment ce = this.serverContext.getEnvironment();
-	Map<String, Object> envVars = ce.getSystemEnvironment();
-	String imageStore = (String) envVars.get("LOCALAPPDATA");
-*/
-	
-/*  May not need this ... but it works
-    // SERVLET PATH
-    // class member
-	@Autowired(required=true)
-	private HttpServletRequest request;
-	// Put this in a method
-	ServletContext servletContext = request.getSession().getServletContext();
-	String absoluteDiskPath = servletContext.getRealPath("/");
-	Cookie[] myCookies = request.getCookies();
-*/
-	
 
 }
