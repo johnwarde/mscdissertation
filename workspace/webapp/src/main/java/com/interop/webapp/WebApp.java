@@ -135,7 +135,7 @@ public class WebApp extends WebMvcConfigurerAdapter {
 		model.put("imagesWebPath", imagesWebPath);
 		model.put("imagename", imageName);
 		model.put("imageref", store.getWebPath(imageName));
-		model.put("effects", new String[]{"Grayscale", "Gaussian", "Invert"});
+		model.put("effects", new String[]{"Grayscale", "Invert", "Blur"});
 		model.put("message", "");
 		return "image";
 	}
