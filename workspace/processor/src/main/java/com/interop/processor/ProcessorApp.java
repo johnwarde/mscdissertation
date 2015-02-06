@@ -16,6 +16,8 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
+
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.*;
@@ -30,8 +32,8 @@ import com.rabbitmq.client.*;
 import com.rabbitmq.client.AMQP.BasicProperties;
 
 
-//@RestController
-//@EnableAutoConfiguration
+@RestController
+@EnableAutoConfiguration
 public class ProcessorApp {
 
 /*
@@ -67,20 +69,21 @@ public class ProcessorApp {
 		container.setQueueNames("foo");
 		return container;
 	}    
-
+*/
+	
     @RequestMapping("/")
     String home() {
         return "Hello World!";
     }
 	
-*/
+
 	static Logger log = Logger.getLogger(ProcessorApp.class.getName());
 	
-	private static final String RPC_QUEUE_NAME = "rpc_queue";
+	private static final String RPC_QUEUE_NAME = "processor_rpc_queue";
 	private static final String HOST_NAME = "localhost";
 	
-    public static void main(String[] args) throws Exception {
-        //SpringApplication.run(ProcessorApp.class, args);
+   	@PostConstruct
+    public void setUpProcessor() throws Exception {
 
 		JsonWrapper objJson = new JsonWrapper();
 		EffectsApplicator effects = new EffectsApplicator();
@@ -131,6 +134,10 @@ public class ProcessorApp {
     				HOST_NAME, map.get("user"), props.getCorrelationId()));			
     	}    	
         
+    }
+
+    public static void main(String[] args) throws Exception {
+        SpringApplication.run(ProcessorApp.class, args);
     }
 
 }

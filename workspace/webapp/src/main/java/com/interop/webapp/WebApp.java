@@ -78,7 +78,7 @@ public class WebApp extends WebMvcConfigurerAdapter {
 
 	private Connection connection;
 	private Channel channel;
-	private String requestQueueName = "rpc_queue";
+	private String requestQueueName = "processor_rpc_queue";
 	private String replyQueueName;
 	private QueueingConsumer consumer;	
 	
