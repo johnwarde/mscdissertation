@@ -22,6 +22,7 @@ import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor;
 import org.springframework.stereotype.*;
@@ -35,7 +36,11 @@ import com.rabbitmq.client.AMQP.BasicProperties;
 @RestController
 @EnableAutoConfiguration
 public class ProcessorApp {
+	@Autowired
+	private ProcessorConfig config;
 
+	static Logger log = Logger.getLogger(ProcessorApp.class.getName());
+	
 /*
     
 	@Autowired
@@ -75,13 +80,8 @@ public class ProcessorApp {
     String home() {
         return "Hello World!";
     }
-	
 
-	static Logger log = Logger.getLogger(ProcessorApp.class.getName());
-	
-	private static final String RPC_QUEUE_NAME = "processor_rpc_queue";
-	private static final String HOST_NAME = "localhost";
-	
+
    	@PostConstruct
     public void setUpProcessor() throws Exception {
 
@@ -89,15 +89,15 @@ public class ProcessorApp {
 		EffectsApplicator effects = new EffectsApplicator();
 		
     	ConnectionFactory factory = new ConnectionFactory();
-    	factory.setHost(HOST_NAME);
+    	factory.setHost(config.getQueueHostName());
     	Connection connection = factory.newConnection();
     	Channel channel = connection.createChannel();
-    	channel.queueDeclare(RPC_QUEUE_NAME, false, false, false, null);
+    	channel.queueDeclare(config.getQueueName(), false, false, false, null);
     	channel.basicQos(1);
     	QueueingConsumer consumer = new QueueingConsumer(channel);
-    	channel.basicConsume(RPC_QUEUE_NAME, false, consumer);
+    	channel.basicConsume(config.getQueueName(), false, consumer);
     	
-		log.info(String.format("processorstart\tsuccess\t%s", HOST_NAME));	    	
+		log.info(String.format("processorstart\tsuccess\t%s\t%s", config.getQueueHostName(), config.getQueueName()));	    	
     	while (true) {
     		String status = "";
     		String response = "";
@@ -112,7 +112,7 @@ public class ProcessorApp {
     	    Map<String, Object> map = objJson.fromJson(message);
     	    if (map != null) {
 				log.info(String.format("processrequest\tsuccess\t%s\t%s\t%s", 
-						HOST_NAME, map.get("user"), props.getCorrelationId()));			
+						config.getQueueHostName(), map.get("user"), props.getCorrelationId()));			
 	
 				status = effects.apply((String) map.get("effectName"),
 						(String) map.get("inputPath"),
@@ -123,7 +123,7 @@ public class ProcessorApp {
 				response = objJson.toJson(map);
 	
 	    		log.info(String.format("processfinish\tsuccess\t%s\t%s\t%s\t%s", 
-	    				HOST_NAME, map.get("user"), props.getCorrelationId(),
+	    				config.getQueueHostName(), map.get("user"), props.getCorrelationId(),
 	    				map.get("ouputPath")));
     	    } else {
     	    	response = "";
@@ -131,13 +131,14 @@ public class ProcessorApp {
     	    channel.basicPublish("", props.getReplyTo(), replyProps, response.getBytes());
     	    channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
     		log.info(String.format("processcompleted\t%s\t%s\t%s\t%s", status, 
-    				HOST_NAME, map.get("user"), props.getCorrelationId()));			
+    				config.getQueueHostName(), map.get("user"), props.getCorrelationId()));			
     	}    	
-        
-    }
 
+    }
+   	
     public static void main(String[] args) throws Exception {
-        SpringApplication.run(ProcessorApp.class, args);
+		new SpringApplicationBuilder(ProcessorApp.class, 
+				"classpath:/META-INF/application-context.xml").run(args);
     }
 
 }

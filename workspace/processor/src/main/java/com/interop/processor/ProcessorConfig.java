@@ -1,28 +1,19 @@
-package com.interop.webapp;
+/**
+ * 
+ */
+package com.interop.processor;
 
 import org.springframework.stereotype.Component;
 
+/**
+ * @author johnwarde
+ *
+ */
 @Component
-public class WebAppConfig {
+public class ProcessorConfig {
 
-	private String hostName;
-	private String imageFilesRoot;
 	private String queueHostName;
 	private String queueName;
-
-	public String getHostName() {
-		return this.hostName;
-	}
-	public void setHostName(String value) {
-		this.hostName = value;
-	}
-	
-	public String getImageFilesRoot() {
-		return imageFilesRoot;
-	}
-	public void setImageFilesRoot(String value) {
-		this.imageFilesRoot = value;
-	}
 
 	public String getQueueHostName() {
 		return this.queueHostName;
@@ -37,4 +28,5 @@ public class WebAppConfig {
 	public void setQueueName(String value) {
 		this.queueName = value;
 	}
+	
 }

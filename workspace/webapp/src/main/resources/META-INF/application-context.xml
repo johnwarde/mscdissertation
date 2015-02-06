@@ -11,6 +11,8 @@
     <bean id="config" class="com.interop.webapp.WebAppConfig">
 	    <property name="hostName" value="http://${webapp.hostname}:${server.port}" />
 	    <property name="imageFilesRoot" value="${webapp.imageFilesRoot}" />
+        <property name="queueHostName" value="${webapp.queuehostname}" />
+        <property name="queueName" value="${webapp.queuename}" />
     </bean>
 
 </beans>
