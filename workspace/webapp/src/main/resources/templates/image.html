@@ -111,7 +111,7 @@ function checkRequest(){
 			<p id="msgbox" class="alert alert-info">Select an effect to apply to the image</p>
 			<br/>
 			<br/>
-			<div class="pull-left">
+			<div class="pull-right">
 				<div id="imagecontainer">
 					<img id="imagetag" th:alt-title="${imagename}" th:src="${imagesWebPath + '/' + imageref}" />
 				</div>
@@ -119,7 +119,7 @@ function checkRequest(){
 					<h2 th:text="${imagename}">image name does here</h2>				
 				</div>
 			</div>
-			<div class="pull-right">
+			<div class="pull-left">
 				<form name="form" th:action="@{/image}" action="/image" method="POST">
 					<fieldset>
  						<input type="hidden" id="imagename" name="imagename" th:value="${imagename}" value="" />
