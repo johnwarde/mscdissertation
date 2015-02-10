@@ -34,7 +34,6 @@ import org.apache.log4j.Logger;
 import com.rabbitmq.client.*;
 import com.rabbitmq.client.AMQP.BasicProperties;
 
-
 /*
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Queue;
@@ -231,14 +230,15 @@ public class WebApp extends WebMvcConfigurerAdapter {
 				config.getImageFilesRoot(),
 				processedFilesWebPath, 
 				correlationId, ext);
-
+		
+		long created = System.currentTimeMillis();
 		mapObject.put("correlationId", correlationId);
 		mapObject.put("user", user);
 		mapObject.put("inputPath", imageFullPath);
 		mapObject.put("ouputPath", processedFileName);
 		mapObject.put("effectName", name);
 		mapObject.put("requestHost", hostName);
-		mapObject.put("requestCreated", "TODO:");
+		mapObject.put("requestCreated", created);
 
 		JsonWrapper objJson = new JsonWrapper();
 		String message = objJson.toJson(mapObject);
@@ -257,15 +257,16 @@ public class WebApp extends WebMvcConfigurerAdapter {
 					hostName, user, correlationId, e.getMessage()));
 			status = "failed";
 		}
-        return new EffectRequest(status, correlationId);
+        return new EffectRequest(status, correlationId, created);
     }
 
 
-    @RequestMapping(value="/effectfetch/{requestid}", 
+    @RequestMapping(value="/effectfetch/{requestid}/{requestcreated}", 
     		headers="Accept=*/*", method=RequestMethod.GET, 
     		produces = "application/json")
     public @ResponseBody EffectFetch effectFetch(
-    		@PathVariable("requestid") String correlationId)    		
+    		@PathVariable("requestid") String correlationId,
+    		@PathVariable("requestcreated") long requestCreated)
     {
 	    String user = getLoggedInUser();
 		String hostName = this.config.getHostName();
@@ -287,8 +288,19 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	            		newFileName.substring(newFileName.lastIndexOf('/') + 1);
 	    		url = "/" + imagesWebPath + "/" + 
 	            		processedFilesWebPath + "/" + newFileName;
-	    		log.info(String.format("effectfetch\t%s\t%s\t%s\t%s", 
-						status, hostName, user, correlationId));
+
+	    	    long curr = System.currentTimeMillis();
+	    	    long start = (Long) mapObject.get("requestCreated");
+	    	    long millisecondsElapsed = curr - start;    //Time difference in milliseconds
+	    	    
+	    		log.info(String.format("effectfetch\t%s\t%s\t%s\t%s\t%d", 
+						status, hostName, user, correlationId, millisecondsElapsed));
+	        } else {
+	        	if ((System.currentTimeMillis() - requestCreated) > 30000) {
+	    			status = "failed";
+	    			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", 
+	    					hostName, user, correlationId, "Max time exceeded"));	        		
+	        	}
 	        }
 		} catch (ShutdownSignalException e) {
 			status = "failed";

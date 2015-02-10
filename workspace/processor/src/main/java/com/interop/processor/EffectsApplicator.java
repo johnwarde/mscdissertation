@@ -33,18 +33,23 @@ public class EffectsApplicator {
 		    return "failed";
 	    }
 	    
-    	switch (Effect.valueOf(effectName)) {
-		case Grayscale:
-			success = grayscale(image);
-			break;
-		case Invert:
-			success = invert(image);
-			break;
-		case Blur:
-			image = blur(image);
-			break;
-		default:
-			break;
+    	try {
+			switch (Effect.valueOf(effectName)) {
+			case Grayscale:
+				success = grayscale(image);
+				break;
+			case Invert:
+				success = invert(image);
+				break;
+			case Blur:
+				image = blur(image);
+				break;
+			default:
+			    return "failed";
+			}
+		} catch (Exception e) {
+	    	log.error(String.format("Invalid effect name (%s), ignoring", effectName));
+	    	success = false;	    	
 		}
 
     	try {
