@@ -16,6 +16,7 @@
 
 package com.interop.webapp;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -77,7 +78,6 @@ public class WebApp extends WebMvcConfigurerAdapter {
 
 	private Connection connection;
 	private Channel channel;
-	private String requestQueueName = "processor_rpc_queue";
 	private String replyQueueName;
 	private QueueingConsumer consumer;	
 	
@@ -91,13 +91,29 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	public void setUpQueue() throws Exception {
 
 	    ConnectionFactory factory = new ConnectionFactory();
-	    factory.setHost("localhost");
+	    factory.setHost(config.getQueueHostName());
 	    connection = factory.newConnection();
 	    channel = connection.createChannel();
 
 	    replyQueueName = channel.queueDeclare().getQueue(); 
 	    consumer = new QueueingConsumer(channel);
-	    channel.basicConsume(replyQueueName, true, consumer);	    
+	    channel.basicConsume(replyQueueName, true, consumer);
+	    // Create the folder that will hold the processed files
+		String foldername = config.getImageFilesRoot() + '/' + processedFilesWebPath;
+		File folder = new File(URI.create(foldername));
+		if (folder.exists()) {
+			return;
+		}
+		log.info("creating directory: " + foldername);	
+	    try {
+	    	folder.mkdir();
+	    } 
+	    catch (SecurityException se) {
+	    	log.error(String.format("creating directory: %s (%s)", foldername, se.getMessage()));		    	
+	    }	
+	    catch (Exception e) {
+	    	log.error(String.format("creating directory: %s (%s)", foldername, e.getMessage()));		    	
+	    }
 	}
 
 
@@ -249,7 +265,7 @@ public class WebApp extends WebMvcConfigurerAdapter {
                                     .replyTo(replyQueueName)
                                     .build();
         try {
-			channel.basicPublish("", requestQueueName, props, message.getBytes());
+			channel.basicPublish("", config.getQueueName(), props, message.getBytes());
 			log.info(String.format("effectrequest\tsuccess\t%s\t%s\t%s", 
 					hostName, user, correlationId));
 		} catch (IOException e) {
