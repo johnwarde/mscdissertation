@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <property file="src/main/resources/application.properties" />
+    
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!-- <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{5} - %msg%n</pattern> -->
+            <pattern>%d{yyy-MM-dd HH:mm:ss.SSS}\t[%thread]\t%-5level\t%logger{5}\t%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+	    <file>${logging.file}</file>
+	    <append>true</append>    
+        <prudent>true</prudent>
+        <encoder>
+            <pattern>%d{yyy-MM-dd HH:mm:ss.SSS}\t[%thread]\t%-5level\t%logger{5}\t%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.interop.webapp.WebAppConfig" level="INFO" additivity="false">
+        <appender-ref ref="FILE" />
+        <appender-ref ref="STDOUT" />
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="FILE" />
+        <appender-ref ref="STDOUT" />
+    </root>
+ 
+ </configuration>

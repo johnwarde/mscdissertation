@@ -6,7 +6,8 @@
                 http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
     <context:annotation-config/>
-    <context:property-placeholder/>
+    <context:property-placeholder location="file:application.properties, classpath:application.properties"
+                                  ignore-resource-not-found="true"/>
 
     <bean id="config" class="com.interop.webapp.WebAppConfig">
 	    <property name="hostName" value="http://${webapp.hostname}:${server.port}" />

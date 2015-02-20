@@ -30,7 +30,8 @@ import static java.nio.file.StandardCopyOption.*;
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.rabbitmq.client.*;
 import com.rabbitmq.client.AMQP.BasicProperties;
@@ -74,7 +75,7 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	static String processedFilesWebPath = "processedfiles";
 	static String imagesWebPathMask = "/" + imagesWebPath + "/**";
 
-	static Logger log = Logger.getLogger(WebApp.class.getName());
+	static final Logger log = LoggerFactory.getLogger(WebApp.class);
 
 	private Connection connection;
 	private Channel channel;
