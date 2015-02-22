@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
+<head>
+<title>Test Harness</title>
+<link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" href="../../css/bootstrap.min.css" />
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+
+<style>
+input[type="text"]
+{
+    width:50px;
+}
+
+section {
+    width: 100%;
+    height: 300px;
+    margin: auto;
+    padding: 0px;
+}
+div#one {
+    width: 40%;
+    height: 300px;
+    float: left;
+}
+div#two {
+    margin-left: 60%;
+    height: 300px;
+}
+</style>
+
+<script th:inline="javascript">
+//<![CDATA[
+
+var processQueueCount = 0;
+var requestTimeOut = /*[+   [[${processingtimeout}]]  +]*/; // milleseconds
+var timeStart = 0;
+
+// processingtimeout
+
+var status = '';
+var timeOut = 0;
+var maxLogLines = 0;
+var maxOpenRequests = 0;
+var batchSize = 0;
+
+var pointer = 0;
+
+var reqqueue = [];
+var testImages  = ['FranceArcDeTriompheRoyaltyFree.jpg', 'holiday.png', 'Pierce.jpg'];
+var testEffects = ['Grayscale', 'Blur', 'Invert'];
+
+function getRandomSelection(sourceArray) {
+    var index = Math.floor((Math.random() * sourceArray.length));
+    return sourceArray[index];
+}
+
+function logMessage(msg){
+    if ($("#logentries").children().length > maxLogLines) {
+        $("#logentries div:last-child").remove();
+    }
+    $("#logentries").prepend("<div>" + msg + "</div>");
+}
+
+function logReset(){
+    $("#logentries").empty();
+    $("#logentries").prepend("<div>Log messages</div>");
+}
+
+
+function removeRequest(requestid){
+    for (var i = 0, len = reqqueue.length; i < len; i++) {
+    	if (reqqueue[i].requestid == requestid) {
+    	    // Remove from queue
+    	    reqqueue.splice(i,1);
+    	    return true;
+    	}
+    }
+    //logMessage('Did not find request ID in queue: ' + requestid);
+    return false;
+}
+
+function setRequestResetCreated(requestid){
+    for (var i = 0, len = reqqueue.length; i < len; i++) {
+        if (reqqueue[i].requestid == requestid) {
+            reqqueue[i].fetchactive = 0;
+        }
+    }
+}
+
+
+function getRequest(requestid){
+    for (var i = 0, len = reqqueue.length; i < len; i++) {
+        if (reqqueue[i].requestid == requestid) {
+            return reqqueue[i];
+        }
+    }
+    return false;
+}
+
+function clearRequests(){
+    while (reqqueue.length > 0) {
+        reqqueue.pop();
+    }
+}
+
+
+
+
+function processQueue(){
+    if (status == 'abort') {
+        return;
+    }
+    var thisBatchCount = 0;
+    var requestUri = '';
+    if (status == 'processqueue' && reqqueue.length < maxOpenRequests) {
+        // Submit some requests
+        thisBatchCount = batchSize;
+        while (thisBatchCount > 0) {
+            var effectName = getRandomSelection(testEffects);
+            var imageName = getRandomSelection(testImages);
+            requestUri = '/effectrequest/' + effectName + '/' + imageName;
+            $.ajax({
+                url: /*[+   [[${hostname}]] + requestUri  +]*/
+            }).then(function(data) {
+                    switch(data.status) {
+                       case 'submitted':
+                           // Add to the end of the queue
+                           reqqueue.push({requestid:data.requestId, created:data.created, fetchactive:0});
+                           logMessage('Logged request ' + data.requestId);
+                           break;
+                       case 'failed':
+                           logMessage('Failed to get respone for Request');
+                           break;
+                    }
+            });
+            thisBatchCount--;
+        }
+   }
+   thisBatchCount = batchSize;
+   if (processQueueCount > 0) {  // First time round don't make any effectfetch requests
+	   for (var i = 0, len = reqqueue.length; i < len; i++) {
+		   if (reqqueue[i].fetchactive == 0) {
+		       requestUri = '/effectfetch/' + reqqueue[i].requestid + '/' + reqqueue[i].created;
+		       reqqueue[i].fetchactive = (new Date()).getTime();
+		       $.ajax({
+		           url: /*[+   [[${hostname}]] + requestUri  +]*/
+		       }).then(function(data) {
+		          switch(data.status) {
+		              case 'completed':
+		                  // Reference the image so that the browser attempts to download the image content - load on server
+		                  $("#imagetag").attr("src", (data.url + '?' + Math.random()));
+                          var request = getRequest(data.requestId);
+                          if (request == false) {
+                              logMessage('Request ID ' + data.requestId + ' not longer exists in the queue, ignoring.');                          
+                          } else {
+                              var msg = 'Processing <strong>completed</strong> for ' + data.requestId + ', ' + data.elapsedTime + ' milliseconds elapsed.';
+			                  removeRequest(data.requestId);
+			                  logMessage(msg);
+                          }
+		                  break;
+		              case 'notready':
+		            	  var request = getRequest(data.requestId);
+		            	  if (request == false) {
+		                      logMessage('Request ID ' + data.requestId + ' not longer exists in the queue, ignoring.');	            		  
+		            	  } else {
+			                  var msg = "";
+			                  if (data.elapsedTime > requestTimeOut) {
+			                      msg = 'Failed to get a reply for request ' + data.requestId + ' after ' + data.elapsedTime + ' milliseconds.';
+			                      removeRequest(data.requestId);
+			                  } else {
+			                      msg = 'Processing continuing for request ' + data.requestId + ', ' + data.elapsedTime + ' milliseconds elapsed.';
+			                      if (!setRequestResetCreated(data.requestId)) {
+			                    	  removeRequest(data.requestId);
+			                      }
+			                  }
+			                  logMessage(msg);
+		            	  }
+		                  break;
+		              case 'failed':
+		                  var msg = 'Server side processing failed for ' + data.requestId;
+		                  removeRequest(data.requestId);
+		                  logMessage(msg);
+		                  break;
+		              default:
+		                  alert('Unknown error : ' + data.status);
+		          }
+		       });
+		   }
+	       thisBatchCount--;
+	    }
+    }
+    processQueueCount++;
+    if (status == 'shutdown' && reqqueue.length == 0) {
+    	$( "#abort" ).trigger( "click" );
+    }
+    $("#noofopenreqs").text(reqqueue.length);
+    setTimeout("processQueue();", timeOut);
+}
+
+
+
+
+
+$(document).ready(function() {
+    
+    $("#start").click(function(){
+        maxOpenRequests = parseInt($( "#maxopenreq" ).val());
+        maxLogLines     = parseInt($( "#maxloglines" ).val());
+        batchSize       = parseInt($( "#batchsize" ).val());
+        timeOut         = parseInt($( "#timeout" ).val());
+        var msg = [];
+        if (batchSize > maxOpenRequests) {
+        	msg.push('Batch size cannot be greater then max open requests');
+        }
+        if (msg.length > 0) {
+            $( "#msgbox" ).text(msg.join(';'));
+        } else {
+	        $( "#msgbox" ).text('Running ...');
+	        $( "#start" ).prop( "disabled", true );
+	        $( "#maxopenreq" ).prop( "disabled", true );
+	        $( "#timeout" ).prop( "disabled", true );
+	        $( "#maxloglines" ).prop( "disabled", true );
+	        $( "#batchsize" ).prop( "disabled", true );        
+	        processQueueCount = 0;
+	        $( "#shutdown" ).prop( "disabled", false );
+	        $( "#abort" ).prop( "disabled", false );
+	        status = 'processqueue';
+	        setTimeout("processQueue();", timeOut);
+        }
+        logReset();
+        return false;
+    });
+
+    $("#shutdown").click(function(){
+        status = 'shutdown';
+        $( "#shutdown" ).prop( "disabled", true );
+        $( "#msgbox" ).text('Stopping ...');
+        return false;
+    });
+ 
+
+    $("#abort").click(function(){
+        status = 'abort';
+        clearRequests();
+        $("#noofopenreqs").text('0');
+        $( "#start" ).prop( "disabled", false );
+        $( "#maxopenreq" ).prop( "disabled", false );
+        $( "#timeout" ).prop( "disabled", false );
+        $( "#maxloglines" ).prop( "disabled", false );
+        $( "#batchsize" ).prop( "disabled", false );
+        $( "#shutdown" ).prop( "disabled", true );
+        $( "#abort" ).prop( "disabled", true );
+        $( "#msgbox" ).text('Enter test parameters');
+        return false;
+    });
+
+});
+
+
+//]]>
+
+</script>
+
+</head>
+
+<body>
+    <div class="container">
+        <div th:replace="fragments/header :: header">...</div>      
+        <h1 th:inline="text">Test Harness for [[${user}]]</h1>
+        <br/>
+        <p id="msgbox" class="alert alert-info">Enter test parameters</p>
+		<section>
+		    <div id="one">
+	           <form name="form" th:action="@{/testharness}" action="/testharness" method="POST">
+	                <fieldset>
+	                    <p><input type="text" id="maxopenreq" value="100" /> Target throttle for requests</p>
+                        <p><input type="text" id="batchsize" value="25" /> Batch size</p>
+                        <p><input type="text" id="timeout" value="1000" /> Time between requests (milliseconds)</p>
+	                    <p><input type="text" id="maxloglines" value="50" /> Maximum log lines (below)</p>
+	                </fieldset>
+	                <input type="submit" id="start" value="Start" class="btn btn-primary" />
+	                <input type="submit" id="shutdown" value="Shutdown" class="btn btn-primary" disabled="disabled" />
+	                <input type="submit" id="abort" value="Abort" class="btn btn-primary" disabled="disabled" />
+	            </form>
+		    </div>
+		    <div id="two">
+	            <div id="imagecontainer">
+	                <img id="imagetag" alt="Rendered Image" src="../../images/interop.png" />
+	            </div>
+		    </div>
+		</section>
+        <div>Number of open requests: <span id="noofopenreqs">0</span> </div>
+        <br />
+        <div id="logentries">
+            <div>Log entries appear here</div>
+        </div>
+        <br />
+        <br />
+        <br />
+        <br />                
+    </div>
+</body>
+</html>

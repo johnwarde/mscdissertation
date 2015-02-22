@@ -9,6 +9,7 @@ public class WebAppConfig {
 	private String imageFilesRoot;
 	private String queueHostName;
 	private String queueName;
+	private long processingTimeout;
 
 	public String getHostName() {
 		return this.hostName;
@@ -37,4 +38,12 @@ public class WebAppConfig {
 	public void setQueueName(String value) {
 		this.queueName = value;
 	}
+
+	public long getProcessingTimeout() {
+		return this.processingTimeout;
+	}
+	public void setProcessingTimeout(long value) {
+		this.processingTimeout = value;
+	}
+
 }

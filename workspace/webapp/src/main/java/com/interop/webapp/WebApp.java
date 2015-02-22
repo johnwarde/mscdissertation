@@ -201,6 +201,18 @@ public class WebApp extends WebMvcConfigurerAdapter {
 		return "upload";
 	}
 
+	
+	@RequestMapping("/testharness")
+	public String testHarness(Map<String, Object> model) {
+	    String user = getLoggedInUser();
+		model.put("user", user);
+		model.put("hostname", config.getHostName());
+		model.put("processingtimeout", config.getProcessingTimeout());
+		return "testharness";
+	}
+	
+
+	
 	@RequestMapping("/logout")
 	public String logout(Map<String, Object> model) {
 		SecurityContextHolder.getContext()
@@ -289,6 +301,7 @@ public class WebApp extends WebMvcConfigurerAdapter {
 		String hostName = this.config.getHostName();
     	String status = "notready";
     	String url = "";
+    	long millisecondsElapsed = 0;
     	
     	String response = null;
     	QueueingConsumer.Delivery delivery = null;
@@ -307,13 +320,13 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	            		processedFilesWebPath + "/" + newFileName;
 
 	    	    long curr = System.currentTimeMillis();
-	    	    long start = (Long) mapObject.get("requestCreated");
-	    	    long millisecondsElapsed = curr - start;    //Time difference in milliseconds
+	    	    millisecondsElapsed = curr - requestCreated;    //Time difference in milliseconds
 	    	    
 	    		log.info(String.format("effectfetch\t%s\t%s\t%s\t%s\t%d", 
 						status, hostName, user, correlationId, millisecondsElapsed));
 	        } else {
-	        	if ((System.currentTimeMillis() - requestCreated) > 30000) {
+	        	millisecondsElapsed = System.currentTimeMillis() - requestCreated;
+	        	if (millisecondsElapsed > config.getProcessingTimeout()) {
 	    			status = "failed";
 	    			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", 
 	    					hostName, user, correlationId, "Max time exceeded"));	        		
@@ -321,18 +334,18 @@ public class WebApp extends WebMvcConfigurerAdapter {
 	        }
 		} catch (ShutdownSignalException e) {
 			status = "failed";
-			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", 
+			log.error(String.format("effectrequest\tqueuefail\t%s\t%s\t%s\t%s", 
 					hostName, user, correlationId, e.getMessage()));			
 		} catch (ConsumerCancelledException e) {
 			status = "failed";
-			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", 
+			log.error(String.format("effectrequest\tqueuefail\t%s\t%s\t%s\t%s", 
 					hostName, user, correlationId, e.getMessage()));			
 		} catch (InterruptedException e) {
 			status = "failed";
-			log.error(String.format("effectrequest\tfail\t%s\t%s\t%s\t%s", 
+			log.error(String.format("effectrequest\tqueuefail\t%s\t%s\t%s\t%s", 
 					hostName, user, correlationId, e.getMessage()));			
 		}
-        return new EffectFetch(status, correlationId, url);
+        return new EffectFetch(status, correlationId, url, millisecondsElapsed);
     }
 
 	public static void main(String[] args) throws Exception {

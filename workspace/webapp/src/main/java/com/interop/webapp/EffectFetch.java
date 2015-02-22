@@ -12,11 +12,13 @@ public class EffectFetch {
     private final String status;
     private final String requestId;
     private final String url;
+    private final long elapsedTime;
 
-    public EffectFetch(String status, String requestId, String url) {
+    public EffectFetch(String status, String requestId, String url, long elapsedTime) {
         this.status = status;
         this.requestId = requestId;
         this.url = url;
+        this.elapsedTime = elapsedTime;
     }
 
     public String getStatus() {
@@ -29,6 +31,10 @@ public class EffectFetch {
     
     public String getUrl() {
         return url;
+    }
+
+    public long getElapsedTime() {
+        return elapsedTime;
     }
 
 	

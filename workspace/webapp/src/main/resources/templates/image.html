@@ -92,6 +92,7 @@ function checkRequest(){
 	           break;
            case 'failed':
                var msg = 'Server side processing failed, please try again.';
+               $("#msgbox").text(msg);
                resetWaitingUi();
                break;
 	       default:

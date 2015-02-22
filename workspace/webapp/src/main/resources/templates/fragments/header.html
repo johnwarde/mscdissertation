@@ -15,6 +15,9 @@
 				<li th:if="${#authentication}? ${#authorization.expression('isAuthenticated()')}">
 					<a th:href="@{/upload}" href="upload"> Upload </a>
 				</li>
+                <li th:if="${#authentication}? ${#authorization.expression('isAuthenticated()')}">
+                    <a th:href="@{/testharness}" href="testharness"> Test Harness </a>
+                </li>
 				<li th:if="${#authentication}? ${#authorization.expression('isAuthenticated()')}">
 					<a th:href="@{/logout}" href="logout"> Logout </a>
 				</li>
