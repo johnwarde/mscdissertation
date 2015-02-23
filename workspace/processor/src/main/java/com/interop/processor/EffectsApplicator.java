@@ -69,7 +69,8 @@ public class EffectsApplicator {
 	    return "failed";
 	}
 	
-	
+	// Algorithm sourced from: 
+	//   http://www.tutorialspoint.com/java_dip/grayscale_conversion.htm
 	private Boolean grayscale(BufferedImage image) {
 		int width;
 		int height;
@@ -89,7 +90,8 @@ public class EffectsApplicator {
 		return true;
 	}
 	
-
+	// Algorithm sourced from: 
+	//   http://stackoverflow.com/questions/8662349/convert-negative-image-to-positive
 	private Boolean invert(BufferedImage image) {
         for (int x = 0; x < image.getWidth(); x++) {
             for (int y = 0; y < image.getHeight(); y++) {
@@ -104,7 +106,8 @@ public class EffectsApplicator {
 		return true;
 	}
 
-	
+	// Algorithm sourced from: 
+	//   http://www.javaworld.com/article/2076764/java-se/image-processing-with-java-2d.html
 	private BufferedImage blur(BufferedImage image) {
 		float ninth = 1.0f / 9.0f;
 		float[] blurKernel = {
