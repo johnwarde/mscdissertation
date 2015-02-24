@@ -1,0 +1,9 @@
+# Using Logback formatted logs with tabs between fields
+# Delete those lines that do not contain 'effectfetch'
+/effectfetch/!d
+# Delete lines containing '[main]'
+/\[main\]/d
+
+# OLD FORMAT
+#/effectrequest/d
+#s/\(\.[0-9]*\)  \([^ ][^ ]*\) \([^ ][^ ]*\) --- \([^ ][^ ]*\) \([^ ][^ ]*\)\(  *\)\([^ ][^ ]*\) /\1\t/
