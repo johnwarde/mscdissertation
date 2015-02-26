@@ -7,12 +7,7 @@ package com.interop.processor;
  * @author johnwarde
  *
  */
-/*
-import org.springframework.amqp.core.AmqpTemplate;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
-import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
-*/
+
 
 import java.util.Map;
 
@@ -20,12 +15,8 @@ import javax.annotation.PostConstruct;
 
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor;
-import org.springframework.stereotype.*;
 import org.springframework.web.bind.annotation.*;
 
 //import com.interop.webapp.WebApp;
@@ -40,42 +31,7 @@ public class ProcessorApp {
 	private ProcessorConfig config;
 
 	static Logger log = Logger.getLogger(ProcessorApp.class.getName());
-	
-/*
-    
-	@Autowired
-	private AmqpTemplate amqpTemplate;
-
-	@Autowired
-	private ConnectionFactory connectionFactory;
-
-	@Bean
-	public ScheduledAnnotationBeanPostProcessor scheduledAnnotationBeanPostProcessor() {
-		return new ScheduledAnnotationBeanPostProcessor();
-	}
-
-	@Bean
-	public Sender mySender() {
-		return new Sender();
-	}
-
-	@Bean
-	public SimpleMessageListenerContainer container() {
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(
-				this.connectionFactory);
-		Object listener = new Object() {
-			@SuppressWarnings("unused")
-			public void handleMessage(String foo) {
-				System.out.println(foo);
-			}
-		};
-		MessageListenerAdapter adapter = new MessageListenerAdapter(listener);
-		container.setMessageListener(adapter);
-		container.setQueueNames("foo");
-		return container;
-	}    
-*/
-	
+		
     @RequestMapping("/")
     String home() {
         return "Hello World!";
