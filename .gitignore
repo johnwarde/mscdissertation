@@ -216,3 +216,5 @@ pip-log.txt
 # Added by johnwarde
 sderc/
 testruns/
+workspace/RemoteSystemsTempFiles/
+workspace/Servers/
